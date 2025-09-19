@@ -25,9 +25,13 @@ function stepSimulation(balls, bounds) {
   }
 
   return balls.map((ball, index) => {
+    //Gravity force
     let ax = 0;
     let ay = 0;
 
+    let isBallCollision = false;
+    let collisionPartnerId = null;
+    //Compute gravity forcevector and check for collision
     for (let i = 0; i < balls.length; i += 1) {
       if (i === index) continue;
       const other = balls[i];
@@ -40,26 +44,34 @@ function stepSimulation(balls, bounds) {
       ay += acceleration * (dy / distance);
     }
 
+    //Update speedvector by gravity forcevector
     let vx = ball.vx + ax * DT;
     let vy = ball.vy + ay * DT;
+
+    //New position
     let x = ball.x + vx * DT;
     let y = ball.y + vy * DT;
 
+    //Check boundrycollision
     if (x < ball.radius) {
+      //Hitting left
       x = ball.radius;
       vx = -vx;
       vy *= 0.98;
     } else if (x > width - ball.radius) {
+      //Hitting right
       x = width - ball.radius;
       vx = -vx;
       vy *= 0.98;
     }
 
     if (y < ball.radius) {
+      //Hitting top
       y = ball.radius;
       vy = -vy;
       vx *= 0.98;
     } else if (y > height - ball.radius) {
+      //Hitting bottom
       y = height - ball.radius;
       vy = -vy;
       vx *= 0.98;
@@ -164,8 +176,8 @@ function App() {
       const y = clamp(dragState.startY, radius, size.height - radius);
       const dx = dragState.currentX - dragState.startX;
       const dy = dragState.currentY - dragState.startY;
-      const previewVx = dx * VELOCITY_SCALE * 10;
-      const previewVy = dy * VELOCITY_SCALE * 10;
+      const previewVx = dx /2;
+      const previewVy = dy /2;
 
       ctx.beginPath();
       ctx.setLineDash([6, 6]);
@@ -178,14 +190,14 @@ function App() {
       ctx.setLineDash([]);
 
       ctx.beginPath();
-      ctx.strokeStyle = 'rgba(15, 23, 42, 0.6)';
+      ctx.strokeStyle = 'rgba(255, 108, 108, 1)';
       ctx.lineWidth = 2;
       ctx.moveTo(x, y);
       ctx.lineTo(x + previewVx, y + previewVy);
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+      ctx.fillStyle = 'red';
       ctx.arc(x + previewVx, y + previewVy, 4, 0, Math.PI * 2);
       ctx.fill();
     }
@@ -324,7 +336,7 @@ function App() {
     >
       <canvas ref={canvasRef} className="canvas" />
       <div className="hint">
-        Klicke oder halte die Maus gedrückt, um neue Himmelskörper zu platzieren. Ziehe währenddessen, um deren Anfangsgeschwindigkeit festzulegen.
+        
       </div>
     </div>
   );
