@@ -1,13 +1,14 @@
 import React, { useEffect, useRef, useState } from 'https://esm.sh/react@18.2.0';
 
-const DT = 0.1; // Sekunden pro Simulationsschritt
+const DT = 0.05; // Sekunden pro Simulationsschritt
 const G = 800; // effektive Gravitationskonstante (skalierter Wert für die Bildschirmgrößen)
 const SOFTENING = 25; // verhindert Singularitäten bei sehr kleinen Abständen
 const MIN_RADIUS = 6;
 const MAX_RADIUS = 60;
 const RADIUS_GROWTH_PER_MS = 0.04;
-const VELOCITY_SCALE = 0.05;
+const VELOCITY_SCALE = 0.75;
 const COLORS = ['#4f46e5', '#ec4899', '#22c55e', '#f59e0b', '#06b6d4'];
+const EPSILON = 0.05
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
@@ -18,6 +19,11 @@ function computeRadius(elapsed = 0) {
   return clamp(grown, MIN_RADIUS, MAX_RADIUS);
 }
 
+function isDivergating(b1,b2) {
+  const currentDistance = Math.sqrt(Math.pow(b1.x-b2.x,2),Math.pow(b1.x-b2.y,2))
+  const newDistance = Math.sqrt(Math.pow((b1.x+b1.vx*EPSILON)-(b2.x+b2.vx*EPSILON),2),Math.pow((b1.y+b1.vy*EPSILON)-(b2.y+b2.vy*EPSILON),2))
+  return currentDistance < newDistance;
+}
 function stepSimulation(balls, bounds) {
   const { width, height } = bounds;
   if (width === 0 || height === 0) {
@@ -39,11 +45,25 @@ function stepSimulation(balls, bounds) {
       const dy = other.y - ball.y;
       const distanceSq = dx * dx + dy * dy + SOFTENING;
       const distance = Math.sqrt(distanceSq);
+      //Check for collision
+      if (distance <= ball.radius+other.radius && !isDivergating(ball,balls[i])) {
+        console.log("Collision");
+        console.log(isDivergating(ball,balls[i]))        
+        isBallCollision=true;
+        collisionPartnerId = i;
+      }
       const acceleration = (G * other.mass) / distanceSq;
       ax += acceleration * (dx / distance);
       ay += acceleration * (dy / distance);
     }
 
+    if (isBallCollision) {
+      console.log("swap")
+      ball.vx *= -1;
+      ball.vy *= -1;
+      balls[collisionPartnerId].vx *= -1;
+      balls[collisionPartnerId].vy *= -1;
+    }
     //Update speedvector by gravity forcevector
     let vx = ball.vx + ax * DT;
     let vy = ball.vy + ay * DT;
